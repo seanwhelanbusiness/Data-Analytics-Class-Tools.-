@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Function Search</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            width: 250px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            overflow-y: auto;
+        }
+        
+        .sidebar h2 {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .library-filter {
+            list-style: none;
+        }
+        
+        .library-filter li {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .library-filter li:hover {
+            background: #f0f0f0;
+        }
+        
+        .library-filter li.active {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .library-count {
+            background: #e0e0e0;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+        }
+        
+        .library-filter li.active .library-count {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .search-box {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1em;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus {
+            border-color: #667eea;
+        }
+        
+        .results {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            min-height: 200px;
+        }
+        
+        .result-item {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .result-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .function-name {
+            font-size: 1.3em;
+            color: #667eea;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .function-desc {
+            color: #555;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        
+        .function-signature {
+            background: #f5f5f5;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .example {
+            background: #f8f9fa;
+            padding: 12px;
+            border-left: 3px solid #667eea;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            white-space: pre-wrap;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .result-item.expanded .example {
+            display: block;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .library-tag {
+            display: inline-block;
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+        
+        .status-message {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <div class="sidebar">
+            <h2>📚 Libraries</h2>
+            <ul class="library-filter" id="libraryFilter">
+                <li data-library="all" class="active">
+                    <span>All Libraries</span>
+                    <span class="library-count" id="count-all">0</span>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="main-content">
+            <div class="container">
+                <div class="header">
+                    <h1>🐍 Python Function Search</h1>
+                    <p>Search by what you want to do, not what it's called</p>
+                </div>
+                
+                <div class="search-box">
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        placeholder="e.g., create boxplot, remove duplicates, read csv file..."
+                        autocomplete="off"
+                    >
+                </div>
+                
+                <div class="results" id="results">
+                    <div class="status-message">Loading functions...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allFunctions = [];
+        let currentLibrary = 'all';
+
+        // Load the JSON file
+        fetch('all_functions.json')
+            .then(response => response.json())
+            .then(data => {
+                allFunctions = data;
+                console.log('Loaded functions:', allFunctions.length);
+                console.log('Sample function:', allFunctions[0]);
+                initializeApp();
+            })
+            .catch(error => {
+                console.error('Error loading functions:', error);
+                document.getElementById('results').innerHTML = 
+                    '<div class="no-results">❌ Could not load function database.<br><br>' +
+                    'Make sure <strong>all_functions.json</strong> is in the same folder as this HTML file.</div>';
+            });
+
+        function initializeApp() {
+            // Build library filter
+            const libraries = {};
+            allFunctions.forEach(func => {
+                libraries[func.library] = (libraries[func.library] || 0) + 1;
+            });
+            
+            const filterList = document.getElementById('libraryFilter');
+            Object.entries(libraries).forEach(([lib, count]) => {
+                const li = document.createElement('li');
+                li.dataset.library = lib;
+                li.innerHTML = `
+                    <span>${lib}</span>
+                    <span class="library-count" id="count-${lib}">${count}</span>
+                `;
+                li.addEventListener('click', () => filterByLibrary(lib));
+                filterList.appendChild(li);
+            });
+            
+            // Update "All" count
+            document.getElementById('count-all').textContent = allFunctions.length;
+            
+            // Add click handler for "All Libraries" button
+            document.querySelector('[data-library="all"]').addEventListener('click', () => filterByLibrary('all'));
+            
+            // Display all functions initially
+            displayResults(allFunctions);
+            
+            // Setup search
+            document.getElementById('searchInput').addEventListener('input', handleSearch);
+        }
+
+        function filterByLibrary(library) {
+            currentLibrary = library;
+            
+            // Update active state
+            document.querySelectorAll('.library-filter li').forEach(li => {
+                li.classList.toggle('active', li.dataset.library === library);
+            });
+            
+            // Re-run search with new filter
+            handleSearch();
+        }
+
+        function handleSearch() {
+            const query = document.getElementById('searchInput').value;
+            const filtered = currentLibrary === 'all' 
+                ? allFunctions 
+                : allFunctions.filter(f => f.library === currentLibrary);
+            
+            if (!query.trim()) {
+                displayResults(filtered);
+                return;
+            }
+            
+            const results = searchFunctions(query, filtered);
+            displayResults(results);
+        }
+
+        function searchFunctions(query, functionsToSearch) {
+            query = query.toLowerCase();
+            const words = query.split(/\s+/);
+            
+            return functionsToSearch
+                .map(func => {
+                    let score = 0;
+                    const funcName = (func.name || '').toLowerCase();
+                    const funcDesc = (func.description || func.short_description || '').toLowerCase();
+                    const funcKeywords = (func.keywords || []).join(' ').toLowerCase();
+                    const searchText = `${funcName} ${funcDesc} ${funcKeywords}`;
+                    
+                    // Exact full name match - highest priority
+                    if (funcName === query || funcName.endsWith('.' + query)) {
+                        score += 1000;
+                    }
+                    
+                    // Function name contains the exact query
+                    if (funcName.includes(query)) {
+                        score += 500;
+                    }
+                    
+                    // Exact phrase match in description or keywords
+                    if (funcDesc.includes(query) || funcKeywords.includes(query)) {
+                        score += 200;
+                    }
+                    
+                    // Check if ALL words appear (better than just some words)
+                    const allWordsPresent = words.every(word => searchText.includes(word));
+                    if (allWordsPresent) {
+                        score += 100;
+                    }
+                    
+                    // Individual word matches in function name (highest weight)
+                    words.forEach(word => {
+                        if (funcName.includes(word)) {
+                            score += 50;
+                        }
+                    });
+                    
+                    // Individual word matches in description
+                    words.forEach(word => {
+                        if (funcDesc.includes(word)) {
+                            score += 20;
+                        }
+                    });
+                    
+                    // Individual word matches in keywords
+                    words.forEach(word => {
+                        if (funcKeywords.includes(word)) {
+                            score += 10;
+                        }
+                    });
+                    
+                    return { ...func, score };
+                })
+                .filter(func => func.score > 0)
+                .sort((a, b) => b.score - a.score);
+        }
+
+        function displayResults(results) {
+            const resultsDiv = document.getElementById('results');
+            
+            if (results.length === 0) {
+                resultsDiv.innerHTML = '<div class="no-results">No functions found. Try different keywords!</div>';
+                return;
+            }
+            
+            resultsDiv.innerHTML = results.map(func => {
+                // Handle different JSON formats
+                const name = func.name || func.full_name || 'Unknown';
+                const desc = func.description || func.short_description || 'No description available';
+                const sig = func.signature || '';
+                const lib = func.library || 'unknown';
+                const examples = func.examples || [];
+                const exampleText = examples.length > 0 ? examples[0] : (func.example || '');
+                
+                return `
+                    <div class="result-item" onclick="this.classList.toggle('expanded')">
+                        <div class="function-name">${name}</div>
+                        <div class="function-desc">${desc}</div>
+                        <div class="function-signature">${name}${sig}</div>
+                        <span class="library-tag">${lib}</span>
+                        ${exampleText ? `<div class="example">${exampleText}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
+</html>
